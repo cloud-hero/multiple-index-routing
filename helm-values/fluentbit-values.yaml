@@ -1,0 +1,31 @@
+backend:
+  type: forward
+  forward:
+    host: fluentd-fluentd-elasticsearch-forward
+    port: 24224
+    tls: "off"
+    tls_verify: "on"
+    tls_debug: 1
+    shared_key:
+
+input:
+  tail:
+    memBufLimit: 5MB
+    parser: docker
+    path: /var/log/containers/spitlogs*_spitlogs_spitlogs-*.log
+    ignore_older: ""
+    dockerMode: false
+    dockerModeFlush: 4
+  systemd:
+    enabled: false
+    filters:
+      systemdUnit:
+        - docker.service
+        - kubelet.service
+        - node-problem-detector.service
+    maxEntries: 1000
+    readFromTail: true
+    stripUnderscores: false
+    tag: host.*
+
+

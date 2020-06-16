@@ -1,0 +1,63 @@
+---
+replicas: 1
+
+image: "docker.elastic.co/logstash/logstash-oss"
+
+logstashPipeline:
+ logstash.conf: |
+  input {
+    beats {
+      port => 5044
+      host => "0.0.0.0"
+      tags => ["fakelogs"]
+    }
+  }
+  filter {
+    if "fakelogs" in [tags] {
+      grok {
+          match => { "message" => "%{IPORHOST:remote_ip} - %{DATA:user_name} \"%{WORD:method} %{DATA:url} HTTP/%{NUMBER:http_version}\" %{NUMBER:response_code} %{NUMBER:bytes} \"%{DATA:referrer}\" \"%{DATA:agent}\" \"(?:%{IPORHOST:real_ip},%{IPORHOST:internal_ip}|-)\" \"%{DATA:frontend_cookie}\" \"%{DATA:request_time}\" \"%{DATA:upstream_response_time}\"" }
+          add_tag => ["access_log"]
+      }
+      if "_grokparsefailure" in [tags] {
+        grok {
+            match => { "message" => "\[%{LOGLEVEL:severity}\] %{POSINT:pid}#%{NUMBER:threadid}\: \*%{NUMBER:connectionid} %{GREEDYDATA:error_msg}, client: %{IP:client}, server: %{GREEDYDATA:server}, upstream: \"%{GREEDYDATA:upstream}\", bytes from/to client:%{GREEDYDATA:bytes_ft_client}, bytes from/to upstream:%{GREEDYDATA:bytes_ft_upstream}" }
+            add_tag => ["error_log"]
+            remove_tag => ["_grokparsefailure"]
+        }
+      }
+    }
+  }
+  filter {
+    if "access_log" in [tags] {
+      mutate { add_field => { "[@metadata][target_index]" => "ls-access-%{+yyyy.MM.dd}" } }
+    }
+    else {
+      mutate { add_field => { "[@metadata][target_index]" => "ls-error-%{+yyyy.MM.dd}" } }
+    }
+  }
+  output {
+    elasticsearch {
+      hosts => "elasticsearch-master:9200"
+      index => "%{[@metadata][target_index]}"
+    }
+  }
+
+logstashJavaOpts: "-Xmx256m -Xms256m"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "1000m"
+    memory: "1536Mi"
+
+
+service:
+ annotations: {}
+ type: ClusterIP
+ ports:
+   - name: beats
+     port: 5044
+     protocol: TCP
+     targetPort: 5044

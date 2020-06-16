@@ -1,0 +1,23 @@
+---
+# Allows you to add any config files in /usr/share/filebeat
+# such as filebeat.yml
+
+image: "docker.elastic.co/beats/filebeat-oss"
+
+filebeatConfig:
+  filebeat.yml: |
+    filebeat.inputs:
+    - type: container
+      paths:
+        - /var/log/containers/spitlogs*_spitlogs_spitlogs-*.log
+      processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+          matchers:
+          - logs_path:
+              logs_path: "/var/log/containers/"
+
+    output.logstash:
+      hosts: ["logstash-logstash:5044"]
+
+    setup.ilm.enabled: false

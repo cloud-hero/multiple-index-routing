@@ -1,0 +1,10 @@
+---
+resources:
+  requests:
+    cpu: "100m"
+    memory: "100Mi"
+  limits:
+    cpu: "1"
+    memory: "1Gi"
+image: "docker.elastic.co/kibana/kibana-oss"
+elasticsearchHosts: "http://elasticsearch-master:9200"

@@ -1,0 +1,73 @@
+image:
+  repository: cloudhero/fluentd_elasticsearch
+  tag: v3.0.2
+  pullPolicy: IfNotPresent
+
+service:
+  ports:
+    - name: "forward"
+      type: ClusterIP
+      port: 24224
+
+configMaps:
+  useDefaults:
+    systemConf: false
+    containersInputConf: false
+    systemInputConf: false
+    forwardInputConf: false
+    monitoringConf: false
+    outputConf: false
+
+# can be used to add new config or overwrite the default configmaps completely after the configmaps default has been disabled above
+extraConfigMaps:
+  system.conf: |-
+    <source>
+      @type forward
+      tag fakelogs
+      port 24224
+      bind 0.0.0.0
+    </source>
+
+    <filter fakelogs>
+      @type parser
+      key_name log
+      <parse>
+        @type grok
+        <grok>
+            pattern %{IPORHOST:remote_ip} - %{DATA:user_name} "%{WORD:method} %{DATA:url} HTTP/%{NUMBER:http_version}" %{NUMBER:response_code} %{NUMBER:bytes} "%{DATA:referrer}" "%{DATA:agent}" "(?:%{IPORHOST:real_ip},%{IPORHOST:internal_ip}|-)" "%{DATA:frontend_cookie}" "%{DATA:request_time}" "%{DATA:upstream_response_time}"
+        </grok>
+        <grok>
+            pattern \[%{LOGLEVEL:severity}\] %{POSINT:pid}#%{NUMBER:threadid}\: \*%{NUMBER:connectionid} %{GREEDYDATA:error_msg}, client: %{IP:client}, server: %{GREEDYDATA:server}, upstream: "%{GREEDYDATA:upstream}", bytes from/to client:%{GREEDYDATA:bytes_ft_client}, bytes from/to upstream:%{GREEDYDATA:bytes_ft_upstream}
+        </grok>
+      </parse>
+    </filter>
+    <match fakelogs>
+      @type rewrite_tag_filter
+      <rule>
+        key severity
+        pattern /.*/
+        tag error_log
+      </rule>
+      <rule>
+        key response_code
+        pattern /.*/
+        tag access_log
+      </rule>
+    </match>
+
+    <match error_log>
+      @type elasticsearch
+      hosts elasticsearch-master:9200
+      logstash_format true
+      logstash_prefix fd-error
+      type_name log
+    </match>
+
+    <match access_log>
+      @type elasticsearch
+      hosts elasticsearch-master:9200
+      logstash_format true
+      logstash_prefix fd-access
+      type_name log
+    </match>
+

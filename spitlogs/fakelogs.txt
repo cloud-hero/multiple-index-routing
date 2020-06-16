@@ -1,0 +1,4 @@
+[error] 7359#7359: *17367 upstream timed out (110: Connection timed out) while connecting to upstream, client: 1.1.1.1, server: 0.0.0.0:443, upstream: "2.2.2.2:443", bytes from/to client:0/0, bytes from/to upstream:0/0
+1.1.1.1 - - "GET / HTTP/1.1" 200 37427 "https://www.test.com/" "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36" "3.3.3.3,4.4.4.4" "FyqZnlcMTwjKj8LfT2JwjF3HHs" "0.187" "0.188"
+[error] 7359#7359: *17367 no live upstreams while connecting to upstream, client: 5.5.5.5, server: 0.0.0.0:443, upstream: "api.fake.io", bytes from/to client:0/0, bytes from/to upstream:0/0
+1.1.1.1 - - "GET /testpage2 HTTP/1.1" 200 47002 "https://www.fakepage.com/" "Mozilla/5.0 (Windows NT 6.1; rv:77.0) Gecko/20100101 Firefox/77.0" "6.6.6.6,7.7.7.7" "tEhE9doovS3TCfW2tSwf4aN6IU" "0.833" "0.836"
